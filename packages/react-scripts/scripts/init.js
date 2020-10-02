@@ -187,6 +187,8 @@ module.exports = function (
   // Copy over some of the devDependencies
   appPackage.dependencies = appPackage.dependencies || {};
 
+  const useTypeScript = appPackage.dependencies['typescript'] != null;
+
   // Setup the script rules
   const templateScripts = templatePackage.scripts || {};
   appPackage.scripts = Object.assign(
@@ -240,6 +242,11 @@ module.exports = function (
   const templateDir = path.join(templatePath, 'template');
   if (fs.existsSync(templateDir)) {
     fs.copySync(templateDir, appPath);
+  const templatePath = template
+    ? path.resolve(originalDirectory, template)
+    : path.join(ownPath, useTypeScript ? 'template-typescript' : 'template');
+  if (fs.existsSync(templatePath)) {
+    fs.copySync(templatePath, appPath);
   } else {
     console.error(
       `Could not locate supplied template: ${chalk.green(templateDir)}`
@@ -332,6 +339,11 @@ module.exports = function (
   }
 
   if (args.find(arg => arg.includes('typescript'))) {
+  if (useTypeScript) {
+    verifyTypeScriptSetup();
+  }
+
+  if (tryGitInit(appPath)) {
     console.log();
     verifyTypeScriptSetup();
   }

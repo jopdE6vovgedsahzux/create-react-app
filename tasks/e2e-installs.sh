@@ -70,6 +70,17 @@ function checkTypeScriptDependencies {
   fi
 }
 
+# Check for accidental dependencies in package.json
+function checkTypeScriptDependencies {
+  if ! awk '/"dependencies": {/{y=1;next}/},/{y=0; next}y' package.json | \
+  grep -v -q -E '^\s*"(@types\/.+)|typescript|(react(-dom|-scripts)?)"'; then
+   echo "Dependencies are correct"
+  else
+   echo "There are extraneous dependencies in package.json"
+   exit 1
+  fi
+}
+
 # Exit the script with a helpful error message when any error is encountered
 trap 'set +x; handle_error $LINENO $BASH_COMMAND' ERR
 
@@ -100,6 +111,9 @@ startLocalRegistry "$root_path"/tasks/verdaccio.yaml
 
 # Publish the monorepo
 publishToLocalRegistry
+
+echo "Create React App Version: "
+npx create-react-app --version
 
 echo "Create React App Version: "
 npx create-react-app --version
@@ -152,6 +166,11 @@ checkDependencies
 
 cd "$temp_app_path"
 npx create-react-app test-app-typescript --template typescript
+# Test --typescript flag
+# ******************************************************************************
+
+cd "$temp_app_path"
+npx create-react-app test-app-typescript --typescript
 cd test-app-typescript
 
 # Check corresponding template is installed.

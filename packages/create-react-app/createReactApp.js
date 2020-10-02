@@ -70,6 +70,7 @@ const program = new commander.Command(packageJson.name)
   )
   .option('--use-npm')
   .option('--use-pnp')
+  .option('--typescript')
   .allowUnknownOption()
   .on('--help', () => {
     console.log(`    Only ${chalk.green('<project-directory>')} is required.`);
@@ -236,6 +237,25 @@ function createApp(name, verbose, version, template, useNpm, usePnp) {
     version = 'react-scripts@0.9.x';
   }
 
+createApp(
+  projectName,
+  program.verbose,
+  program.scriptsVersion,
+  program.useNpm,
+  program.usePnp,
+  program.typescript,
+  hiddenProgram.internalTestingTemplate
+);
+
+function createApp(
+  name,
+  verbose,
+  version,
+  useNpm,
+  usePnp,
+  useTypescript,
+  template
+) {
   const root = path.resolve(name);
   const appName = path.basename(root);
 
@@ -330,7 +350,8 @@ function createApp(name, verbose, version, template, useNpm, usePnp) {
     originalDirectory,
     template,
     useYarn,
-    usePnp
+    usePnp,
+    useTypescript
   );
 }
 
@@ -413,7 +434,8 @@ function run(
   originalDirectory,
   template,
   useYarn,
-  usePnp
+  usePnp,
+  useTypescript
 ) {
   Promise.all([
     getInstallPackage(version, originalDirectory),
@@ -438,6 +460,34 @@ function run(
         let packageVersion = semver.coerce(packageInfo.version);
 
         const templatesVersionMinimum = '3.3.0';
+  const packageToInstall = getInstallPackage(version, originalDirectory);
+  const allDependencies = ['react', 'react-dom', packageToInstall];
+  if (useTypescript) {
+    allDependencies.push(
+      '@types/react',
+      '@types/react-dom',
+      '@types/jest',
+      'typescript'
+    );
+  }
+
+  console.log('Installing packages. This might take a couple of minutes.');
+  getPackageName(packageToInstall)
+    .then(packageName =>
+      checkIfOnline(useYarn).then(isOnline => ({
+        isOnline: isOnline,
+        packageName: packageName,
+      }))
+    )
+    .then(info => {
+      const isOnline = info.isOnline;
+      const packageName = info.packageName;
+      console.log(
+        `Installing ${chalk.cyan('react')}, ${chalk.cyan(
+          'react-dom'
+        )}, and ${chalk.cyan(packageName)}...`
+      );
+      console.log();
 
         // Assume compatibility if we can't test the version.
         if (!semver.valid(packageVersion)) {
